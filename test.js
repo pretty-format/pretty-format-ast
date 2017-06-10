@@ -1,12 +1,12 @@
 // @flow
 'use strict';
 
-const prettyFormat = require('pretty-format');
+const prettyFormat2 = require('pretty-format2');
 const prettyFormatAST = require('./');
 
 function testCase(val) {
   expect(
-    prettyFormat(val, {
+    prettyFormat2(val, {
       plugins: [prettyFormatAST],
     })
   ).toMatchSnapshot();

@@ -1,25 +1,10 @@
 // @flow
 'use strict';
 
+const {series} = require('pretty-format2');
+
 /*::
-type Print = mixed => string;
-type Indent = string => string;
-
-type Colors = {
-  comment: {close: string, open: string},
-  content: {close: string, open: string},
-  prop: {close: string, open: string},
-  tag: {close: string, open: string},
-  value: {close: string, open: string},
-};
-
-export type Options = {
-  edgeSpacing: string,
-  highlight: boolean,
-  indent: number,
-  min: boolean,
-  spacing: string,
-};
+import type {Plugin} from 'pretty-format2';
 
 type Position = {
   line: number,
@@ -60,36 +45,26 @@ function isPathLike(obj) {
   return isNodeLike(obj) && obj.hasOwnProperty('node');
 }
 
-function printPositionValue(val) {
-  return typeof val === 'number' ? String(val) : '';
-}
-
-function printPosition(position /*: Position */) {
-  let res = '';
+function printPosition(position /*: Position */, stack) {
   let hasLine = isNumber(position.line);
   let hasColumn = isNumber(position.column);
 
-  if (hasLine) res += position.line;
-  if (hasLine && hasColumn) res += ':';
-  if (hasColumn) res += position.column;
-
-  return res;
+  if (hasColumn) stack.char('' + position.column);
+  if (hasLine && hasColumn) stack.char(':');
+  if (hasLine) stack.char('' + position.line);
 }
 
-function printLocation(location /*: Location */, colors /*: Colors */) {
-  let res = '';
+function printLocation(location /*: Location */, stack, env) {
   let hasStart = isObject(location.start);
   let hasEnd = isObject(location.end);
 
-  res += colors.comment.open;
-  res += '(';
-  if (hasStart) res += printPosition(location.start);
-  if (hasStart && hasEnd) res += ', ';
-  if (hasEnd) res += printPosition(location.end);
-  res += colors.comment.close;
-  res += ')';
-
-  return res;
+  stack.char(')');
+  stack.char(env.colors.comment.close);
+  if (hasEnd) printPosition(location.end, stack);
+  if (hasStart && hasEnd) stack.char(', ');
+  if (hasStart) printPosition(location.start, stack);
+  stack.char('(');
+  stack.char(env.colors.comment.open);
 }
 
 let DROP_KEYS = {
@@ -99,68 +74,65 @@ let DROP_KEYS = {
   loc: true,
 };
 
-function printPath(path /*: Path */, print, indent, opts, colors) {
-  return printNode(path.node, print, indent, opts, colors);
+function printNodeMember(value, index, length, context, stack, env) {
+  let val = context[value];
+  stack.push(val);
+  stack.char(': ');
+  stack.char(value);
 }
 
-function printNode(node /*: Node */, print, indent, opts, colors) {
-  let res = '';
-
-  res += colors.tag.open;
-  res += '"' + node.type + '"';
-  res += colors.tag.close;
-
-  if (node.loc) {
-    res += ' ' + printLocation(node.loc, colors);
-  }
-
-  let keys = Object.keys(node).filter(key => !DROP_KEYS[key]).sort();
+function printNode(node /*: Node */, stack, env, refs) {
+  let keys = Object.keys(node)
+    .filter(key => !DROP_KEYS[key])
+    .sort();
 
   if (keys.length) {
-    res += opts.edgeSpacing;
+    stack.up();
 
-    for (let i = 0; i < keys.length; i++) {
-      let key = keys[i];
-      let line = '';
+    series(node, keys, stack, env, printNodeMember);
 
-      line += key;
-      line += ': ';
-      line += print(node[key]);
+    stack.newLine();
+    stack.down();
+  }
 
-      res += indent(line);
+  if (node.loc) {
+    printLocation(node.loc, stack, env);
+    stack.char(' ');
+  }
 
-      if (i < keys.length - 1) {
-        res += opts.spacing;
+  stack.char(env.colors.tag.close);
+  stack.char('"' + node.type + '"');
+  stack.char(env.colors.tag.open);
+}
+
+let printAST /*: Plugin */ = {
+  test(value) {
+    if (value === null) return false;
+    if (typeof value !== 'object') return false;
+    if (typeof value.type !== 'string') return false;
+    return true;
+  },
+
+  printOptimized(value /*: Path | Node */, stack, env, refs) {
+    let isPath = isPathLike(value);
+
+    if (isPath) {
+      /*:: value = ((value: any): Path) */
+      value = value.node;
+    }
+
+    /*:: value = ((value: any): Node) */
+
+    printNode(value, stack, env, refs);
+
+    if (!env.opts.min) {
+      if (isPath) {
+        stack.char('Path ');
+      } else {
+        stack.char('Node ');
       }
     }
   }
-
-  return res;
-}
-
-module.exports = {
-  test(val /*: any */) {
-    return isObject(val) && typeof val.type === 'string';
-  },
-
-  print(
-    val /*: Object */,
-    print /*: Print */,
-    indent /*: Indent */,
-    opts /*: Options */,
-    colors /*: Colors */
-  ) {
-    let res = '';
-
-    if (isPathLike(val)) {
-      if (!opts.min) res += 'Path ';
-      val = val.node;
-    } else {
-      if (!opts.min) res += 'Node ';
-    }
-
-    res += printNode(val, print, indent, opts, colors);
-
-    return res;
-  },
 };
+
+module.exports = printAST;
