@@ -1,6 +1,6 @@
 # pretty-format-ast
 
-> [Pretty format](https://github.com/facebook/jest/tree/master/packages/pretty-format) plugin to print ASTs prettier
+> [pretty-format2](https://github.com/pretty-format/pretty-format2) plugin to print ASTs prettier
 
 ### Installation
 
@@ -11,10 +11,10 @@ yarn add pretty-format pretty-format-ast
 ### Usage
 
 ```js
-const prettyFormat = require('pretty-format');
+const prettyFormat2 = require('pretty-format2');
 const prettyFormatAST = require('pretty-format-ast');
 
-prettyFormat(val, {
+prettyFormat2(val, {
   plugins: [prettyFormatAST],
 })
 ```
@@ -34,12 +34,12 @@ Node "FunctionDeclaration"
     Node "Identifier" (1:11, 1:18)
       name: "b"
       typeAnnotation: Node "TypeAnnotation" (1:12, 1:18)
-          typeAnnotation: Node "StringLiteralTypeAnnotation" (1:14, 1:18)
-              extra: Object {
-                  "raw": "\"hi\"",
-                  "rawValue": "hi",
-                }
-             value: "hi",
+        typeAnnotation: Node "StringLiteralTypeAnnotation" (1:14, 1:18)
+          extra: Object {
+            "raw": "\"hi\"",
+            "rawValue": "hi",
+          }
+          value: "hi",
     Node "Identifier" (1:20, 1:21)
       name: "c",
     Node "RestElement" (1:23, 1:27)
