@@ -45,6 +45,14 @@ test('print node', () => {
   );
 });
 
+test('print node with kind', () => {
+  testCase({
+    kind: 'Test',
+    a: true,
+    b: 'hi'
+  });
+});
+
 test('print path', () => {
   testCase(
     path(

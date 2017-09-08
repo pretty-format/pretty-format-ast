@@ -20,6 +20,10 @@ type Node = {
   type: string,
   loc: Location,
   [key: string]: mixed,
+} | {
+  kind: string,
+  loc: Location,
+  [key: string]: mixed,
 };
 
 type Path = {
@@ -38,11 +42,16 @@ function isObject(val) {
 }
 
 function isNodeLike(obj) {
-  return typeof obj.type === 'string';
+  return typeof obj.type === 'string' || typeof obj.kind === 'string';
 }
 
 function isPathLike(obj) {
   return isNodeLike(obj) && obj.hasOwnProperty('node');
+}
+
+function getTypeKey(obj) {
+  if (typeof obj.type === 'string') return 'type';
+  if (typeof obj.kind === 'string') return 'kind';
 }
 
 function printPosition(position /*: Position */, stack) {
@@ -68,7 +77,8 @@ function printLocation(location /*: Location */, stack, env) {
 }
 
 let DROP_KEYS = {
-  type: true,
+  kind: false,
+  type: false,
   start: true,
   end: true,
   loc: true,
@@ -82,8 +92,9 @@ function printNodeMember(value, index, length, context, stack, env) {
 }
 
 function printNode(node /*: Node */, stack, env, refs) {
+  let typeKey = getTypeKey(node);
   let keys = Object.keys(node)
-    .filter(key => !DROP_KEYS[key])
+    .filter(key => !DROP_KEYS[key] && key !== typeKey)
     .sort();
 
   if (keys.length) {
@@ -100,16 +111,19 @@ function printNode(node /*: Node */, stack, env, refs) {
     stack.char(' ');
   }
 
-  stack.char(env.colors.tag.close);
-  stack.char('"' + node.type + '"');
-  stack.char(env.colors.tag.open);
+  let typeValue = typeKey && node[typeKey];
+  if (typeof typeValue === 'string') {
+    stack.char(env.colors.tag.close);
+    stack.char('"' + typeValue + '"');
+    stack.char(env.colors.tag.open);
+  }
 }
 
 let printAST /*: Plugin */ = {
   test(value) {
     if (value === null) return false;
     if (typeof value !== 'object') return false;
-    if (typeof value.type !== 'string') return false;
+    if (!isNodeLike(value)) return false;
     return true;
   },
 

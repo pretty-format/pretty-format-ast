@@ -14,6 +14,12 @@ exports[`print node 1`] = `
   ]"
 `;
 
+exports[`print node with kind 1`] = `
+"Node \\"Test\\"
+  a: true
+  b: \\"hi\\""
+`;
+
 exports[`print path 1`] = `
 "Path \\"FunctionDeclaration\\" (1:1, 1:1)
   id: Node \\"Identifier\\" (1:1, 1:1)
