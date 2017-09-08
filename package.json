@@ -1,6 +1,6 @@
 {
   "name": "pretty-format-ast",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "pretty-format2 plugin to print ASTs prettier",
   "main": "index.js",
   "repository": "pretty-format/pretty-format-ast",
